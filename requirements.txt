@@ -1,4 +1,4 @@
-Flask==2.3.3
+Flask==2.2.5
 Flask-Cors==5.0.0
 midi2audio==0.1.1
 MIDIUtil==1.2.1
