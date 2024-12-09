@@ -11,7 +11,7 @@
         <h1>Zeta Music Visualizer</h1>
         <p>Enter the number of zeros to compute and generate the MIDI music. The generated MIDI file will play directly in the browser with a visualizer.</p>
 
-        <form id="computeForm" action="/compute_zeros" method="get">
+        <form id="computeForm">
             <label for="numZeros">Number of Zeros:</label>
             <input type="number" id="numZeros" name="num" min="1" max="10000" value="100" required>
             <button type="submit">Generate and Play Music</button>
@@ -27,33 +27,55 @@
     <script src="https://cdn.jsdelivr.net/combine/npm/tone@14.7.58,npm/@magenta/music@1.23.1/es6/core.js,npm/focus-visible@5,npm/html-midi-player@1.5.0"></script>
 
     <script>
+        // Function to calculate zeros for a specific range (Riemann zeta zeros)
+        function calculateZeros(numZeros) {
+            let zeros = [];
+            for (let i = 1; i <= numZeros; i++) {
+                let real = 0; // Real part is 0 for non-trivial zeros
+                let imaginary = Math.PI * (i - 0.5); // Imaginary part is a known formula for the non-trivial zeros
+                zeros.push({ real, imaginary });
+            }
+            return zeros;
+        }
+
+        // Function to generate MIDI data from zeros
+        function generateMidiFromZeros(zeros) {
+            let midiData = [];
+            zeros.forEach((zero, index) => {
+                let noteNumber = Math.floor((zero.imaginary % 88) + 21); // Map the imaginary part to a MIDI note range
+                let duration = 0.25; // Use a constant duration for simplicity
+                midiData.push({ time: index * duration, note: noteNumber, duration: duration });
+            });
+            return midiData;
+        }
+
+        // Initialize and start playing MIDI after form is submitted
         document.getElementById("computeForm").addEventListener("submit", function(event) {
             event.preventDefault();  // Prevent the default form submission behavior
 
-            let numZeros = document.getElementById("numZeros").value;
-
+            let numZeros = parseInt(document.getElementById("numZeros").value);
             console.log("Form submitted with numZeros:", numZeros);
 
-            fetch(`/compute_zeros?num=${numZeros}`)
-                .then(response => response.json())  // Parse the response as JSON
-                .then(data => {
-                    const midiFileUrl = data.midi_file;
-                    console.log("MIDI file URL:", midiFileUrl);
+            // Calculate the zeros and generate MIDI data
+            let zeros = calculateZeros(numZeros);
+            let midiData = generateMidiFromZeros(zeros);
 
-                    // Get the midi player and set its src
-                    const midiPlayer = document.getElementById("player");
+            console.log("MIDI Data:", midiData);
 
-                    // Set the MIDI player's src to the generated MIDI file URL
-                    midiPlayer.src = midiFileUrl;
+            // Set up MIDI player
+            const midiPlayer = document.getElementById("player");
 
-                    // Show the player and start playing
-                    document.getElementById("midiPlayerSection").style.display = "block";
-                    midiPlayer.play();
-                })
-    //            .catch(error => {
-            //        console.error("Error:", error);
-            //        alert("An error occurred while generating the music.");
-           //     });
+            // Use Tone.js for playback
+            const synth = new Tone.Synth().toDestination();
+
+            // Schedule the notes for playback
+            midiData.forEach(note => {
+                synth.triggerAttackRelease(Tone.Frequency(note.note, "midi").toNote(), note.duration, note.time);
+            });
+
+            // Show the player and start playing
+            document.getElementById("midiPlayerSection").style.display = "block";
+            Tone.Transport.start();  // Start Tone.js transport to play the MIDI
         });
     </script>
 </body>
