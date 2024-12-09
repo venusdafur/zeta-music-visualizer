@@ -4,7 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zeta Music Visualizer</title>
-    <link rel="stylesheet" href="static/css/style.css"> <!-- Ensure this is correct -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Add this in case you need a specific style for the visualizer -->
+    <style>
+        midi-visualizer {
+            width: 100%;
+            height: 300px;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -18,65 +26,48 @@
         </form>
 
         <!-- MIDI Player and Visualizer -->
-        <div id="midiPlayerSection" style="display: none;">
-            <midi-player id="player" sound-font visualizer="#myVisualizer"></midi-player>
-            <midi-visualizer type="piano-roll" id="myVisualizer"></midi-visualizer>
-        </div>
+        <midi-player id="player" sound-font visualizer="#myVisualizer"></midi-player>
+        <midi-visualizer id="myVisualizer" type="piano-roll"></midi-visualizer>
     </div>
 
     <!-- Load external scripts -->
-    <script src="https://cdn.jsdelivr.net/combine/npm/tone@14.7.58,npm/@magenta/music@1.23.1/es6/core.js,npm/focus-visible@5,npm/html-midi-player@1.5.0"></script>
+    <script src="https://cdn.jsdelivr.net/combine/npm/tone@14.7.58,npm/@magenta/music@1.23.1/es6/core.js,npm/focus-visible@5,npm/html-midi-player@1.4.0"></script>
 
     <script>
-        // Function to calculate zeros for a specific range (Riemann zeta zeros)
-        function calculateZeros(numZeros) {
-            let zeros = [];
-            for (let i = 1; i <= numZeros; i++) {
-                let real = 0; // Real part is 0 for non-trivial zeros
-                let imaginary = Math.PI * (i - 0.5); // Imaginary part is a known formula for the non-trivial zeros
-                zeros.push({ real, imaginary });
-            }
-            return zeros;
-        }
-
-        // Function to generate MIDI data from zeros
-        function generateMidiFromZeros(zeros) {
-            let midiData = [];
-            zeros.forEach((zero, index) => {
-                let noteNumber = Math.floor((zero.imaginary % 88) + 21); // Map the imaginary part to a MIDI note range
-                let duration = 0.25; // Use a constant duration for simplicity
-                midiData.push({ time: index * duration, note: noteNumber, duration: duration });
-            });
-            return midiData;
-        }
-
-        // Initialize and start playing MIDI after form is submitted
         document.getElementById("computeForm").addEventListener("submit", function(event) {
             event.preventDefault();  // Prevent the default form submission behavior
 
-            let numZeros = parseInt(document.getElementById("numZeros").value);
-            console.log("Form submitted with numZeros:", numZeros);
+            // Start Tone.js context after user interaction
+            Tone.start().then(() => {
+                let numZeros = parseInt(document.getElementById("numZeros").value);
+                console.log("Form submitted with numZeros:", numZeros);
 
-            // Calculate the zeros and generate MIDI data
-            let zeros = calculateZeros(numZeros);
-            let midiData = generateMidiFromZeros(zeros);
+                // Calculate the zeros and generate MIDI data
+                let zeros = calculateZeros(numZeros);
+                let midiData = generateMidiFromZeros(zeros);
 
-            console.log("MIDI Data:", midiData);
+                console.log("MIDI Data:", midiData);
 
-            // Set up MIDI player
-            const midiPlayer = document.getElementById("player");
+                // Set up MIDI player
+                const midiPlayer = document.getElementById("player");
 
-            // Use Tone.js for playback
-            const synth = new Tone.Synth().toDestination();
+                // Use Tone.js for playback
+                const synth = new Tone.Synth().toDestination();
 
-            // Schedule the notes for playback
-            midiData.forEach(note => {
-                synth.triggerAttackRelease(Tone.Frequency(note.note, "midi").toNote(), note.duration, note.time);
+                // Schedule the notes for playback
+                midiData.forEach(note => {
+                    synth.triggerAttackRelease(Tone.Frequency(note.note, "midi").toNote(), note.duration, note.time);
+                });
+
+                // Set the midi player's src
+                midiPlayer.src = midiData;
+
+                // Show the player and start playing
+                document.getElementById("midiPlayerSection").style.display = "block";
+                Tone.Transport.start();  // Start Tone.js transport to play the MIDI
+            }).catch(e => {
+                console.error("Error starting Tone.js context:", e);
             });
-
-            // Show the player and start playing
-            document.getElementById("midiPlayerSection").style.display = "block";
-            Tone.Transport.start();  // Start Tone.js transport to play the MIDI
         });
     </script>
 </body>
