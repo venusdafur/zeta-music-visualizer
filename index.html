@@ -18,10 +18,12 @@
             <button type="submit">Generate and Play Music</button>
         </form>
 
-        <!-- MIDI Player and Visualizer -->
+        <!-- MIDI Visualizer -->
         <div id="midiPlayerSection" style="display: none;">
-            <midi-player id="player" sound-font visualizer="#myVisualizer"></midi-player>
-            <midi-visualizer type="piano-roll" id="myVisualizer"></midi-visualizer>
+            <!-- Visualizer container -->
+            <div id="visualizerContainer">
+                <div id="pianoRollVisualizer"></div>
+            </div>
         </div>
     </div>
 
@@ -51,6 +53,22 @@
             return midiData;
         }
 
+        // Function to create a MIDI object for Magenta's visualizer
+        function createMidiObject(midiData) {
+            let midi = {
+                tracks: [
+                    {
+                        notes: midiData.map(note => ({
+                            pitch: note.note,
+                            startTime: note.time,
+                            endTime: note.time + note.duration
+                        }))
+                    }
+                ]
+            };
+            return midi;
+        }
+
         // Initialize and start playing MIDI after form is submitted
         document.getElementById("computeForm").addEventListener("submit", function(event) {
             event.preventDefault();  // Prevent the default form submission behavior
@@ -64,8 +82,19 @@
 
             console.log("MIDI Data:", midiData);
 
-            // Set up MIDI player
-            const midiPlayer = document.getElementById("player");
+            // Create a MIDI object for Magenta's visualizer
+            let midiObject = createMidiObject(midiData);
+
+            // Show the visualizer section
+            document.getElementById("midiPlayerSection").style.display = "block";
+
+            // Visualize the MIDI using Magenta.js's PianoRollVisualizer
+            const visualizer = new mm.PianoRollVisualizer("#pianoRollVisualizer", {
+                midi: midiObject,  // Pass the generated MIDI object
+                noteHeight: 10,    // Adjust note height if needed
+                noteWidth: 10,     // Adjust note width if needed
+            });
+            visualizer.draw();
 
             // Use Tone.js for playback
             const synth = new Tone.Synth().toDestination();
@@ -74,9 +103,8 @@
                 synth.triggerAttackRelease(Tone.Frequency(note.note, "midi").toNote(), note.duration, note.time);
             });
 
-            // Show the player and start playing
-            document.getElementById("midiPlayerSection").style.display = "block";
-            Tone.Transport.start();  // Start Tone.js transport to play the MIDI
+            // Start Tone.js transport to play the MIDI
+            Tone.Transport.start();
         });
     </script>
 </body>
