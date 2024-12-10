@@ -18,6 +18,12 @@
             <button type="submit">Generate and Play Music</button>
         </form>
 
+        <!-- Progress Bar -->
+        <div id="progressContainer" style="display: none;">
+            <p>Generating MIDI... <span id="progressText">0%</span></p>
+            <progress id="progressBar" value="0" max="100"></progress>
+        </div>
+
         <!-- MIDI Player and Visualizer -->
         <div id="midiPlayerSection" style="display: none;">
             <midi-player id="player" sound-font visualizer="#myVisualizer"></midi-player>
@@ -30,12 +36,18 @@
 
     <script>
         // Function to calculate zeros for a specific range (Riemann zeta zeros)
-        function calculateZeros(numZeros) {
+        function calculateZeros(numZeros, progressCallback) {
             let zeros = [];
             for (let i = 1; i <= numZeros; i++) {
                 let real = 0; // Real part is 0 for non-trivial zeros
                 let imaginary = Math.PI * (i - 0.5); // Imaginary part is a known formula for the non-trivial zeros
                 zeros.push({ real, imaginary });
+
+                // Update progress bar every 10 steps
+                if (i % 10 === 0) {
+                    const progress = Math.floor((i / numZeros) * 100);
+                    progressCallback(progress);
+                }
             }
             return zeros;
         }
@@ -58,8 +70,11 @@
             let numZeros = parseInt(document.getElementById("numZeros").value);
             console.log("Form submitted with numZeros:", numZeros);
 
+            // Show the progress bar and start the process
+            document.getElementById("progressContainer").style.display = "block";
+            
             // Calculate the zeros and generate MIDI data
-            let zeros = calculateZeros(numZeros);
+            let zeros = calculateZeros(numZeros, updateProgressBar);
             let midiData = generateMidiFromZeros(zeros);
 
             console.log("MIDI Data:", midiData);
@@ -75,9 +90,15 @@
             });
 
             // Show the player and start playing
-           // document.getElementById("midiPlayerSection").style.display = "block";
+            document.getElementById("midiPlayerSection").style.display = "block";
             Tone.Transport.start();  // Start Tone.js transport to play the MIDI
         });
+
+        // Update the progress bar and text
+        function updateProgressBar(progress) {
+            document.getElementById("progressBar").value = progress;
+            document.getElementById("progressText").textContent = `${progress}%`;
+        }
     </script>
 </body>
 </html>
