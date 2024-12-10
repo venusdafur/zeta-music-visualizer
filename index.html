@@ -75,25 +75,31 @@
             let numZeros = parseInt(document.getElementById("numZeros").value);
             console.log("Form submitted with numZeros:", numZeros);
 
-            // Calculate the zeros and generate MIDI data
-            let zeros = calculateZeros(numZeros);
-            let midiData = generateMidiFromZeros(zeros);
+            // Start the AudioContext when user clicks the button (required by Tone.js)
+            Tone.start().then(() => {
+                console.log('AudioContext started');
 
-            console.log("MIDI Data:", midiData);
+                // Calculate the zeros and generate MIDI data
+                let zeros = calculateZeros(numZeros);
+                let midiData = generateMidiFromZeros(zeros);
 
-            // Create a Blob for the generated MIDI data
-            const midiBlob = generateMidiBlob(midiData);
-            const midiFileUrl = URL.createObjectURL(midiBlob);  // Create an object URL for the Blob
+                console.log("MIDI Data:", midiData);
 
-            // Set up MIDI player
-            const midiPlayer = document.getElementById("player");
+                // Create a Blob for the generated MIDI data
+                const midiBlob = generateMidiBlob(midiData);
+                const midiFileUrl = URL.createObjectURL(midiBlob);  // Create an object URL for the Blob
 
-            // Set the src attribute to the generated MIDI file URL
-            midiPlayer.setAttribute('src', midiFileUrl);
+                // Set up MIDI player
+                const midiPlayer = document.getElementById("player");
 
-            // Show the player and start playing
-            document.getElementById("midiPlayerSection").style.display = "block";
-            midiPlayer.play();
+                // Set the src attribute to the generated MIDI file URL
+                midiPlayer.setAttribute('src', midiFileUrl);
+
+                // Show the player and start playing
+                document.getElementById("midiPlayerSection").style.display = "block";
+            }).catch(error => {
+                console.error('AudioContext start failed', error);
+            });
         });
     </script>
 </body>
