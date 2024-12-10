@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zeta Music Visualizer</title>
-    <link rel="stylesheet" href="/static/css/style.css"> <!-- Make sure the path is correct -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="static/css/style.css"> <!-- Ensure this is correct -->
 </head>
 <body>
     <div class="container">
@@ -19,13 +20,7 @@
 
         <!-- MIDI Player and Visualizer -->
         <div id="midiPlayerSection" style="display: none;">
-            <!-- Use Cifkao's midi-player component -->
-            <midi-player 
-                id="player"
-                sound-font
-                visualizer="#myVisualizer"
-                src="">
-            </midi-player>
+            <midi-player id="player" sound-font visualizer="#myVisualizer"></midi-player>
             <midi-visualizer type="piano-roll" id="myVisualizer"></midi-visualizer>
         </div>
     </div>
@@ -56,18 +51,6 @@
             return midiData;
         }
 
-        // Function to convert MIDI data to a Blob
-        function generateMidiBlob(midiData) {
-            const midiArray = [];
-            midiData.forEach(note => {
-                // This is where you'd encode the MIDI data; here we're just generating a simple example MIDI structure
-                midiArray.push(note.note, note.time, note.duration);
-            });
-
-            // Blob to create a downloadable MIDI file
-            return new Blob([new Uint8Array(midiArray)], { type: 'audio/midi' });
-        }
-
         // Initialize and start playing MIDI after form is submitted
         document.getElementById("computeForm").addEventListener("submit", function(event) {
             event.preventDefault();  // Prevent the default form submission behavior
@@ -75,31 +58,25 @@
             let numZeros = parseInt(document.getElementById("numZeros").value);
             console.log("Form submitted with numZeros:", numZeros);
 
-            // Start the AudioContext when user clicks the button (required by Tone.js)
-            Tone.start().then(() => {
-                console.log('AudioContext started');
+            // Calculate the zeros and generate MIDI data
+            let zeros = calculateZeros(numZeros);
+            let midiData = generateMidiFromZeros(zeros);
 
-                // Calculate the zeros and generate MIDI data
-                let zeros = calculateZeros(numZeros);
-                let midiData = generateMidiFromZeros(zeros);
+            console.log("MIDI Data:", midiData);
 
-                console.log("MIDI Data:", midiData);
+            // Set up MIDI player
+            const midiPlayer = document.getElementById("player");
 
-                // Create a Blob for the generated MIDI data
-                const midiBlob = generateMidiBlob(midiData);
-                const midiFileUrl = URL.createObjectURL(midiBlob);  // Create an object URL for the Blob
-
-                // Set up MIDI player
-                const midiPlayer = document.getElementById("player");
-
-                // Set the src attribute to the generated MIDI file URL
-                midiPlayer.setAttribute('src', midiFileUrl);
-
-                // Show the player and start playing
-                document.getElementById("midiPlayerSection").style.display = "block";
-            }).catch(error => {
-                console.error('AudioContext start failed', error);
+            // Use Tone.js for playback
+            const synth = new Tone.Synth().toDestination();
+            // Schedule the notes for playback
+            midiData.forEach(note => {
+                synth.triggerAttackRelease(Tone.Frequency(note.note, "midi").toNote(), note.duration, note.time);
             });
+
+            // Show the player and start playing
+            document.getElementById("midiPlayerSection").style.display = "block";
+            Tone.Transport.start();  // Start Tone.js transport to play the MIDI
         });
     </script>
 </body>
